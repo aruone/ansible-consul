@@ -131,22 +131,16 @@
         - consul_raw_key is not defined
         - not bootstrap_state.stat.exists | bool
       block:
-        - name: Create temporary file to receive gossip encryption key
-          become: false
-          tempfile:
-            state: file
-          register: gossip_key_tempfile
-
         - name: Generate gossip encryption key
-          shell: "PATH={{ consul_bin_path }}:$PATH consul keygen > {{ gossip_key_tempfile.path }}"
+          shell: "PATH={{ consul_bin_path }}:$PATH consul keygen"
           register: consul_keygen
 
-        - name: Fetch key locally to share with other nodes
+        - name: Write key locally to share with other nodes
           become: false
-          fetch:
-            src: "{{ gossip_key_tempfile.path }}"
+          lineinfile:
+            line: "{{ consul_keygen.stdout }}"
             dest: "{{ consul_raw_key_file.path }}"
-            flat: true
+            create: true
 
       always:
         - name: Clean up temporary file
